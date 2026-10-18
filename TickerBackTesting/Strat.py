@@ -1,36 +1,36 @@
-import yfinance as yf
+
 import pandas as pd
 import math 
 import numpy as np
 
-def buy_hold(ticker, start, end):
-    data = yf.download(ticker, start=start, end=end)
-    prices = data['Close'][ticker]
+def buy_hold(prices):
+    
+   
     returns = prices.pct_change()
     equity = (1 + returns).cumprod()
     return equity
 
-def momentumShifter(ticker, start, end):
-    data = yf.download(ticker,start=start, end=end)
-    df_prices = data[['Close']]
-    twelveMonths = df_prices.pct_change(252)
+def momentumShifter(prices):
+    
+    df_prices = prices.to_frame(name='Close')
+    twelveMonths = df_prices['Close'].pct_change(252)
     df_prices['Signal'] = (twelveMonths > 0).astype(int)
-    return df_prices['Signal'].to_frame(name= f'{ticker}_Signal')
-def GoldenCross(ticker,start,end):
-    data = yf.download(ticker, start=start, end=end)
-    df_prices = data[['Close']]
+    return df_prices['Signal'].to_frame(name= f'{prices.name}_Signal')
+def GoldenCross(prices):
+   
+    df_prices = prices.to_frame(name='Close')
  
 # Moves the data in a data frame
 # along with that it also creates a new colummn so that I'm able to compare the two
     df_prices['MovingAverage50'] = df_prices['Close'].rolling(window = 50).mean()
     df_prices['MovingAverage200'] = df_prices['Close'].rolling(window = 200).mean()
     df_prices['Signal'] = (df_prices["MovingAverage50"] > df_prices['MovingAverage200']).astype(int)
-    return df_prices['Signal'].to_frame(name= f'{ticker}_Signal')
+    return df_prices['Signal'].to_frame(name= f'{prices.name}_Signal')
 
 
-def meanRSI(ticker, start, end, window=14, buy_below=30, sell_above=70):
-    data = yf.download(ticker, start=start, end=end)
-    prices = data['Close'][ticker]
+def meanRSI(prices, window=14, buy_below=30, sell_above=70):
+    
+   
 
     # 1. RSI: what share of the last 14 days' movement was upward?
     change = prices.diff()                  # today's close minus yesterday's
@@ -46,7 +46,7 @@ def meanRSI(ticker, start, end, window=14, buy_below=30, sell_above=70):
     signal.loc[rsi > sell_above] = 0        # RSI over 70 → sell
     signal = signal.ffill().fillna(0).astype(int)
 
-    return signal.to_frame(name=f'{ticker}_RSI')
+    return signal.to_frame(name=f'{prices.name}_RSI')
    
 def backtest(prices, signal):
     signal = signal.squeeze()
